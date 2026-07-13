@@ -1,29 +1,52 @@
-- name: Check labels
-  uses: actions/github-script@v7
-  with:
-    script: |
-      const { owner, repo } = context.repo;
-      const pull_number = context.payload.pull_request.number;
+name: Validate PR Labels
 
-      const { data: issue } = await github.rest.issues.get({
-        owner,
-        repo,
-        issue_number: pull_number
-      });
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+      - labeled
+      - unlabeled
 
-      const labels = issue.labels.map(l => l.name);
+permissions:
+  pull-requests: read
+  issues: read
 
-      console.log("Labels:", labels);
+jobs:
+  labels:
+    runs-on: ubuntu-latest
 
-      function has(prefix) {
-        return labels.some(label => label.startsWith(prefix));
-      }
+    steps:
+      - name: Check labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
 
-      if (!has("area::"))
-        core.setFailed("Missing area label.");
+            const { data: issue } = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number: pull_number
+            });
 
-      if (!has("priority::"))
-        core.setFailed("Missing priority label.");
+            const labels = issue.labels.map(l => l.name);
 
-      if (!has("type::"))
-        core.setFailed("Missing type label.");
+            console.log("Labels:", labels);
+
+            function has(prefix) {
+              return labels.some(label => label.startsWith(prefix));
+            }
+
+            if (!has("area::"))
+              core.setFailed("Missing area label.");
+
+            if (!has("priority::"))
+              core.setFailed("Missing priority label.");
+
+            if (!has("type::"))
+              core.setFailed("Missing type label.");
+
+            console.log("✅ Labels are valid.");
