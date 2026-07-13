@@ -2,6 +2,7 @@ name: Validate Commits
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   commitlint:
@@ -10,4 +11,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: wagoid/commitlint-github-action@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: |
+          npm install --no-save @commitlint/cli @commitlint/config-conventional
+
+      - run: |
+          npx commitlint \
+            --from origin/${{ github.base_ref }} \
+            --to HEAD
+
+      - run: |
+          echo "✅ Commit messages are valid."
