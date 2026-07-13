@@ -1,149 +1,308 @@
 # Sentinel
 
-Sentinel é uma plataforma para gerenciamento de dispositivos IoT, colecionamento de dados, execução de runs e geração de alertas. O repositório contém serviços backend, frontend e infraestrutura para rodar a stack localmente via Docker Compose.
+> ⚠️ **Project Status:** Early Development
+>
+> Sentinel is currently under active development. The architecture is stable, but new features and improvements are continuously being added.
 
-**Resumo rápido**
-- Backend: Node.js + TypeScript + Prisma (Postgres)
-- Banco: PostgreSQL (imagem oficial)
-- Broker MQTT: Eclipse Mosquitto
-- UI: pasta `app` (frontend)
+> **Open Source IoT Device Management Platform**
 
-## Arquitetura
+Sentinel is an open-source platform for managing IoT devices at scale. It provides device provisioning, telemetry ingestion, MQTT communication, remote command execution, and alert management through a modern backend architecture.
 
-- `api/services` — código do backend (TypeScript + Prisma). Contém repositórios de acesso a dados e inicializador (`src/main.ts`).
-- `app` — frontend (conteúdo para build/execução em container).
-- `infra/docker/docker-compose.yml` — orquestração dos serviços: `db`, `adminer`, `mqtt`, `backend`, `frontend`.
-- `infra/database/initdb` — scripts SQL para inicialização do banco.
-- `api/services/prisma/schema.prisma` — modelo de dados Prisma (tabelas, enums e relações).
+Built with scalability, maintainability, and observability in mind, Sentinel aims to serve as a production-ready foundation for IoT applications.
 
-## Tecnologias
+---
 
-- Node.js, TypeScript
-- Prisma ORM + @prisma/client
+## ✨ Features
+
+- 📡 MQTT-based device communication
+- 📊 Telemetry collection and storage
+- 🖥️ Device management
+- ⚡ Remote command execution
+- 🚨 Alert engine
+- 👥 Multi-user support
+- 🗄️ PostgreSQL database
+- 🔐 Authentication *(planned)*
+- 📈 Observability *(planned)*
+- 🐳 Docker Compose deployment
+- 🧪 Static code analysis with Semgrep
+- 🚀 CI/CD with GitHub Actions
+
+---
+
+## 🏗 Architecture
+
+```
+                   MQTT
+
+ Devices ───────────────► Broker
+                               │
+                               ▼
+                       Sentinel Backend
+              ┌──────────┬──────────┬──────────┐
+              │          │          │          │
+          Devices   Telemetry   Alerts   Commands
+              │
+              ▼
+         PostgreSQL Database
+              │
+              ▼
+          REST API / Frontend
+```
+
+---
+
+## 📂 Repository Structure
+
+```
+.
+├── api/
+│   └── services/          # Backend services (NestJS + Prisma)
+│
+├── app/                   # Frontend application
+│
+├── infra/
+│   ├── database/
+│   │   └── initdb/        # Database initialization scripts
+│   └── docker/            # Docker Compose environment
+│
+├── semgrep/               # Static analysis rules
+│
+├── .githooks/             # Git hooks
+│
+└── docs/                  # Documentation (planned)
+```
+
+---
+
+## 🛠 Technology Stack
+
+### Backend
+
+- NestJS
+- TypeScript
+- Prisma ORM
+
+### Database
+
 - PostgreSQL
-- Docker / Docker Compose
-- Mosquitto (MQTT broker)
 
-## Pré-requisitos
+### Messaging
 
-- Docker e Docker Compose instalados (ou Docker Desktop).
-- Git para clonar o repositório.
-- (Opcional) Node.js e pnpm/npm/yarn para desenvolvimento local do backend e frontend.
+- Eclipse Mosquitto (MQTT)
 
-## Variáveis de ambiente (usadas em `infra/docker/.env` ou no ambiente)
+### Infrastructure
 
-- `POSTGRES_DB` — nome do banco (ex: `sentinel`)
-- `POSTGRES_USER` — usuário Postgres
-- `POSTGRES_PASSWORD` — senha do usuário Postgres
-- `POSTGRES_PORT` — porta exposta para PostgreSQL (ex: `5432`)
-- `ADMINER_PORT` — porta para Adminer (ex: `8080`)
-- `MQTT_PORT` — porta MQTT (1883)
-- `MQTT_WS_PORT` — porta MQTT WebSocket (9001)
-- `BACKEND_PORT` — porta do backend (ex: `3000`)
-- `FRONTEND_PORT` — porta do frontend (ex: `3001`)
+- Docker
+- Docker Compose
 
-Coloque essas variáveis em um arquivo `.env` na pasta `infra/docker` ou exporte no seu ambiente antes de executar o `docker-compose`.
+### Code Quality
 
-## Executando com Docker Compose (recomendado)
+- GitHub Actions
+- Semgrep
 
-1. Copie o exemplo de `.env` (se houver) ou crie um arquivo `.env` com as variáveis acima na pasta `infra/docker`.
-2. No diretório `infra/docker`, execute:
+---
+
+## 🚀 Quick Start
+
+Clone the repository:
 
 ```bash
+git clone https://github.com/<your-user>/sentinel.git
+cd sentinel
+```
+
+Create an `.env` file inside `infra/docker`.
+
+Example:
+
+```env
+POSTGRES_DB=sentinel
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_PORT=5432
+
+ADMINER_PORT=8080
+
+MQTT_PORT=1883
+MQTT_WS_PORT=9001
+
+BACKEND_PORT=3000
+FRONTEND_PORT=3001
+```
+
+Start the entire stack:
+
+```bash
+cd infra/docker
 docker compose up --build
 ```
 
-Isso criará os containers: Postgres (`db`), Adminer (`adminer`), Mosquitto (`mqtt`), backend (`backend`) e frontend (`frontend`).
+After the containers are running, the services will be available at:
 
-Aguarde o banco ficar saudável (o compose depende do healthcheck) e então acesse:
+| Service | URL |
+|---------|-----|
+| Backend | http://localhost:3000 |
+| Frontend | http://localhost:3001 |
+| Adminer | http://localhost:8080 |
 
-- Adminer: http://localhost:${ADMINER_PORT}
-- Backend: http://localhost:${BACKEND_PORT}
-- Frontend: http://localhost:${FRONTEND_PORT}
+---
 
-## Desenvolvimento local do Backend
+## 💻 Backend Development
 
-1. Entre na pasta do serviço:
+Navigate to the backend project:
 
 ```bash
 cd api/services
 ```
 
-2. Instale dependências e gere o cliente Prisma:
+Install dependencies:
 
 ```bash
 npm install
+```
+
+Generate the Prisma Client:
+
+```bash
 npx prisma generate
 ```
 
-3. Crie a variável `DATABASE_URL` apontando para sua instância Postgres (pode usar a criada pelo Docker Compose). Exemplo:
+Configure the database connection:
 
 ```bash
-export DATABASE_URL="postgresql://user:password@localhost:5432/sentinel"
+DATABASE_URL="postgresql://user:password@localhost:5432/sentinel"
 ```
 
-4. Inicie em modo de desenvolvimento (hot reload):
+Run the development server:
 
 ```bash
 npm run dev
 ```
 
-Para buildar e rodar em produção:
+Build for production:
 
 ```bash
 npm run build
 npm start
 ```
 
-## Banco de Dados e Prisma
+---
 
-- O schema Prisma está em `api/services/prisma/schema.prisma`.
-- Scripts de inicialização do banco (criação de extensões/tabelas) estão em `infra/database/initdb` e são montados no container do Postgres via `docker-compose` para execução automática na primeira inicialização.
-- Para trabalhar com migrações e cliente Prisma:
+## 🗄 Database
 
-```bash
-cd api/services
-npx prisma generate    # gera o client
-npx prisma migrate dev # criar/rodar migrações (se usado)
+The Prisma schema is located at:
+
+```
+api/services/prisma/schema.prisma
 ```
 
-## Estrutura do repositório (visão rápida)
+Initialize or update the database:
 
-- `api/services` — backend (TypeScript, Prisma)
-- `app` — frontend (UI)
-- `infra/docker` — `docker-compose.yml` e arquivos de infraestrutura
-- `infra/database/initdb` — scripts SQL de inicialização
-- `.githooks` — hooks Git (configurar via `git config core.hooksPath .githooks`)
-- `semgrep` — regras de segurança/estilo para CI
+```bash
+npx prisma migrate dev
+npx prisma generate
+```
 
-## Regras de commit e githooks
+Database initialization scripts are automatically executed when PostgreSQL starts for the first time.
 
-Este repositório inclui hooks e um padrão sugerido para mensagens de commit (ex.: `feat(scope): descrição curta`). Para ativar os hooks locais:
+---
+
+## 📡 MQTT
+
+Sentinel follows a topic-based communication model.
+
+Example topics:
+
+```
+devices/{deviceId}/telemetry
+devices/{deviceId}/heartbeat
+devices/{deviceId}/commands
+devices/{deviceId}/ack
+devices/{deviceId}/logs
+```
+
+---
+
+## 🔒 Code Quality
+
+This project includes:
+
+- GitHub Actions
+- Semgrep security rules
+- Conventional Commits
+- Git Hooks
+- Pull Request validation
+
+To enable local Git hooks:
 
 ```bash
 git config core.hooksPath .githooks
 ```
 
-Use os tipos comuns: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `build`, `ci`, `perf`.
+---
 
-## Segurança e análise estática
+## 📋 Commit Convention
 
-Regras do Semgrep estão incluídas em `semgrep/rules` e workflows em `semgrep/ci.yml` para detectar desde problemas de configuração até vazamento de segredos.
+Examples:
 
-## Contribuição
+```
+feat(device): register new device
 
-- Abra issues para bugs ou novas features.
-- Faça branches por feature: `feature/nome-da-feature`.
-- Siga o padrão de commits e inclua descrições claras.
+fix(mqtt): reconnect after broker timeout
 
-## Licença
+refactor(auth): simplify JWT validation
 
-Adicione aqui a licença do projeto (ex: MIT) antes de publicar publicamente.
-
-## Contato
-
-Se quiser, inclua um email ou link para contato/maintainer.
+build: update Docker images
+```
 
 ---
 
-Arquivo atualizado automaticamente por assistente. Para ajustes finos (ex.: exemplo de `.env`, instruções de build do `app`), diga o que quer incluir e eu complemento.
+## 🗺 Roadmap
+
+- [x] Docker environment
+- [x] PostgreSQL integration
+- [x] MQTT communication
+- [x] Prisma ORM
+- [ ] Authentication & Authorization
+- [ ] Device Provisioning
+- [ ] Remote Command Queue
+- [ ] Alert Rule Engine
+- [ ] OpenTelemetry
+- [ ] Prometheus
+- [ ] Grafana Dashboards
+- [ ] Device Simulator
+- [ ] BLE Support
+- [ ] LoRa Support
+- [ ] REST API Documentation
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome!
+
+Please:
+
+- Create feature branches
+- Follow the Conventional Commit specification
+- Open a Pull Request
+- Keep documentation up to date
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+## 📬 Contact
+
+Feel free to reach out if you'd like to collaborate or discuss the project.
+
+- LinkedIn: https://linkedin.com/in/luigiquaglio
+- Email: quagluigi@gmail.com
+
+---
+
+> *"Building reliable software for the physical world."*

@@ -1,8 +1,18 @@
-name: Validate Pull Request
+name: Validate PR Labels
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+      - labeled
+      - unlabeled
+
+permissions:
+  pull-requests: read
+  issues: read
 
 jobs:
   labels:
@@ -13,10 +23,21 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const labels = context.payload.pull_request.labels.map(l => l.name);
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+
+            const { data: issue } = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number: pull_number
+            });
+
+            const labels = issue.labels.map(l => l.name);
+
+            console.log("Labels:", labels);
 
             function has(prefix) {
-              return labels.some(l => l.startsWith(prefix));
+              return labels.some(label => label.startsWith(prefix));
             }
 
             if (!has("area::"))
@@ -27,3 +48,5 @@ jobs:
 
             if (!has("type::"))
               core.setFailed("Missing type label.");
+
+            console.log("✅ Labels are valid.");
