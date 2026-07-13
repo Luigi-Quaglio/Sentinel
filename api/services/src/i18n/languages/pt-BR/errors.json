@@ -1,0 +1,6 @@
+{
+  "notFound": "Registro não encontrado",
+  "unauthorized": "Usuário não autorizado",
+  "forbidden": "Você não possui permissão para realizar esta ação",
+  "internal": "Erro interno do servidor"
+}

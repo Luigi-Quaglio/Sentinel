@@ -1,0 +1,33 @@
+rules:
+  - id: no-direct-prisma-outside-repository
+    message: "Use repositories for Prisma access. Do not import prisma directly outside repository files."
+    severity: ERROR
+    languages: [typescript]
+    pattern-either:
+      - pattern: import prisma from "../prismaClient"
+      - pattern: import prisma from "./prismaClient"
+      - pattern: import prisma from "../../prismaClient"
+      - pattern: import prisma from "../../../prismaClient"
+      - pattern: import prisma from "../../../../prismaClient"
+    paths:
+      include:
+        - services/src/**/*.ts
+      exclude:
+        - services/src/repositories/**
+        - services/src/prismaClient.ts
+        - "**/*.spec.ts"
+        - "**/*.test.ts"
+        
+  - id: no-prisma-client-import-outside-infra
+    message: "Do not import PrismaClient directly outside the database/infra layer."
+    severity: ERROR
+    languages: [typescript]
+    pattern: import { PrismaClient } from "@prisma/client"
+    paths:
+      include:
+        - services/src/**/*.ts
+      exclude:
+        - services/src/prismaClient.ts
+        - services/src/repositories/**
+        - "**/*.spec.ts"
+        - "**/*.test.ts"

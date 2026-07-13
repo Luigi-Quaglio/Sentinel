@@ -1,0 +1,30 @@
+name: Semgrep
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+
+    container:
+      image: returntocorp/semgrep:latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: semgrep --config semgrep/rules/secrets.yml .
+
+      - run: |
+          semgrep \
+            --config semgrep/rules/logging.yml \
+            --config semgrep/rules/config-env.yml \
+            --config semgrep/rules/prisma-architecture.yml \
+            api
+
+      - run: |
+          semgrep \
+            --config semgrep/rules/logging.yml \
+            --config semgrep/rules/i18n.yml \
+            app

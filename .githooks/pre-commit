@@ -1,0 +1,32 @@
+#!/bin/sh
+
+echo "🔥 PRE-COMMIT HOOK EXECUTADO"
+
+echo "Running security checks..."
+
+echo "Scanning repository for secrets..."
+semgrep \
+  --config semgrep/rules/secrets.yml \
+  --error \
+  . || exit 1
+
+
+echo "Scanning api..."
+semgrep \
+  --config semgrep/ci.yml \
+  api || exit 1
+
+
+echo "Scanning app..."
+semgrep \
+  --config semgrep/ci.yml \
+  app || exit 1
+
+
+echo "Scanning infra..."
+semgrep \
+  --config semgrep/ci.yml \
+  infra || exit 1
+
+  
+echo "✅ Pre-commit checks passed"

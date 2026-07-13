@@ -1,0 +1,2 @@
+#!/bin/sh
+node .githooks/scripts/validate-commit-msg.js "$1"

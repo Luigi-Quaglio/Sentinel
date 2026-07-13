@@ -1,0 +1,26 @@
+rules:
+  - id: no-console-log
+    message: "Do not use console.log/debug/trace directly. Use the project logger."
+    severity: ERROR
+    languages: [javascript, typescript]
+    patterns:
+      - pattern-either:
+          - pattern: console.log(...)
+          - pattern: console.debug(...)
+          - pattern: console.trace(...)
+    paths:
+      exclude:
+        - scripts/**
+        - "**/*.spec.ts"
+        - "**/*.test.ts"
+
+  - id: no-debugger
+    message: "Remove debugger statements before committing."
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: debugger
+    paths:
+      exclude:
+        - scripts/**
+        - "**/*.spec.ts"
+        - "**/*.test.ts"

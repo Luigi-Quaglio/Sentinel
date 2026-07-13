@@ -1,0 +1,18 @@
+rules:
+  - id: no-hardcoded-user-message
+    message: "Avoid hardcoded user-facing messages. Use i18n/message keys."
+    severity: WARNING
+    languages: [typescript]
+    patterns:
+      - pattern-either:
+          - pattern: throw new Error("...")
+          - pattern: throw new BadRequestException("...")
+          - pattern: throw new NotFoundException("...")
+          - pattern: throw new UnauthorizedException("...")
+    paths:
+      include:
+        - services/src/**/*.ts
+      exclude:
+        - services/src/i18n/**
+        - "**/*.spec.ts"
+        - "**/*.test.ts"

@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//
+// ENUMS
+//
+
+enum CompanyType {
+  COMPANY
+  LABORATORY
+  UNIVERSITY
+}
+
+enum UnityType {
+  UNIT
+  LABORATORY
+  SECTOR
+  ROOM
+}
+
+enum UserUnityStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum DeviceStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  DISABLED
+}
+
+enum InstallationStatus {
+  ACTIVE
+  REMOVED
+  INACTIVE
+}
+
+enum RunStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum RunTriggerSource {
+  MANUAL
+  AUTOMATIC
+  SCHEDULED
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+//
+// MODELS
+//
+
+model Role {
+  id          BigInt      @id @default(autoincrement())
+  name        String      @unique @db.VarChar(50)
+  description String?
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  userUnities UserUnity[]
+
+  @@map("role")
+}
+
+model Company {
+  id        BigInt       @id @default(autoincrement())
+  name      String       @db.VarChar(150)
+  legalName String?      @map("legal_name") @db.VarChar(200)
+  document  String?      @db.VarChar(30)
+  type      CompanyType
+  active    Boolean      @default(true)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  unities   Unity[]
+
+  @@map("company")
+  @@index([type], map: "idx_company_type")
+}
+
+model User {
+  id                   BigInt       @id @default(autoincrement())
+  name                 String       @db.VarChar(150)
+  email                String       @unique @db.VarChar(150)
+  passwordHash         String       @map("password_hash")
+  active               Boolean      @default(true)
+  lastLoginAt          DateTime?    @map("last_login_at") @db.Timestamptz(6)
+  createdAt            DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  preferredLanguage String @default("pt-BR") @map("preferred_language") @db.VarChar(10)
+
+  userUnities          UserUnity[]
+  acknowledgedAlerts   Alert[]      @relation("AlertAcknowledgedByUser")
+
+  @@map("user")
+}
+
+model Unity {
+  id          BigInt       @id @default(autoincrement())
+  companyId   BigInt       @map("company_id")
+  name        String       @db.VarChar(150)
+  code        String?      @db.VarChar(50)
+  description String?
+  type        UnityType    @default(UNIT)
+  active      Boolean      @default(true)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  userUnities   UserUnity[]
+  installations Installation[]
+
+  @@map("unity")
+  @@index([companyId], map: "idx_unity_company_id")
+}
+
+model UserUnity {
+  id        BigInt           @id @default(autoincrement())
+  userId    BigInt           @map("user_id")
+  unityId   BigInt           @map("unity_id")
+  roleId    BigInt           @map("role_id")
+  status    UserUnityStatus  @default(ACTIVE)
+  joinedAt  DateTime         @default(now()) @map("joined_at") @db.Timestamptz(6)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  unity     Unity            @relation(fields: [unityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  role      Role             @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("user_unity")
+  @@unique([userId, unityId], map: "uq_user_unity_user_unity")
+  @@index([userId], map: "idx_user_unity_user_id")
+  @@index([unityId], map: "idx_user_unity_unity_id")
+}
+
+model Device {
+  serial           String           @id @db.VarChar(100)
+  name             String?          @db.VarChar(150)
+  model            String?          @db.VarChar(100)
+  firmwareVersion  String?          @map("firmware_version") @db.VarChar(50)
+  hardwareVersion  String?          @map("hardware_version") @db.VarChar(50)
+  status           DeviceStatus    @default(ACTIVE)
+  activatedAt      DateTime?        @map("activated_at") @db.Timestamptz(6)
+  lastSeenAt       DateTime?        @map("last_seen_at") @db.Timestamptz(6)
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  installations    Installation[]
+  runs             Run[]
+  alerts           Alert[]
+  deviceData       DeviceData[]
+
+  @@map("device")
+}
+
+model Installation {
+  id            BigInt              @id @default(autoincrement())
+  unityId       BigInt              @map("unity_id")
+  deviceSerial String              @map("device_serial") @db.VarChar(100)
+  installedAt   DateTime            @default(now()) @map("installed_at") @db.Timestamptz(6)
+  removedAt     DateTime?           @map("removed_at") @db.Timestamptz(6)
+  status        InstallationStatus  @default(ACTIVE)
+  notes         String?
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  unity         Unity               @relation(fields: [unityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  device       Device             @relation(fields: [deviceSerial], references: [serial], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("installation")
+  @@index([unityId], map: "idx_installation_unity_id")
+  @@index([deviceSerial], map: "idx_installation_device_serial")
+}
+
+model Run {
+  id              BigInt            @id @default(autoincrement())
+  deviceSerial   String            @map("device_serial") @db.VarChar(100)
+  startedAt       DateTime          @default(now()) @map("started_at") @db.Timestamptz(6)
+  endedAt         DateTime?         @map("ended_at") @db.Timestamptz(6)
+  status          RunStatus         @default(RUNNING)
+  triggerSource   RunTriggerSource  @default(MANUAL) @map("trigger_source")
+  notes           String?
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  maxTemperature  Decimal?          @map("max_temperature") @db.Decimal(10, 4)
+  minTemperature  Decimal?          @map("min_temperature") @db.Decimal(10, 4)
+
+  device         Device           @relation(fields: [deviceSerial], references: [serial], onDelete: Restrict, onUpdate: Cascade)
+  alerts          Alert[]
+  deviceData      DeviceData[]
+
+  @@map("run")
+  @@index([deviceSerial], map: "idx_run_device_serial")
+  @@index([startedAt], map: "idx_run_started_at")
+}
+
+model AlertType {
+  id          BigInt          @id @default(autoincrement())
+  code        String          @unique @db.VarChar(50)
+  name        String          @db.VarChar(100)
+  description String?
+  severity    AlertSeverity   @default(MEDIUM)
+  active      Boolean         @default(true)
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  alerts      Alert[]
+
+  @@map("alert_type")
+}
+
+model Alert {
+  id                    BigInt      @id @default(autoincrement())
+  deviceSerial         String      @map("device_serial") @db.VarChar(100)
+  runId                 BigInt?     @map("run_id")
+  alertTypeId           BigInt      @map("alert_type_id")
+  occurredAt            DateTime    @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  title                 String?     @db.VarChar(150)
+  message               String?
+  value                 Decimal?    @db.Decimal(12, 4)
+  threshold             Decimal?    @db.Decimal(12, 4)
+  acknowledged          Boolean     @default(false)
+  acknowledgedByUserId  BigInt?     @map("acknowledged_by_user_id")
+  acknowledgedAt        DateTime?   @map("acknowledged_at") @db.Timestamptz(6)
+  resolvedAt            DateTime?   @map("resolved_at") @db.Timestamptz(6)
+  createdAt             DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  device               Device     @relation(fields: [deviceSerial], references: [serial], onDelete: Restrict, onUpdate: Cascade)
+  run                   Run?        @relation(fields: [runId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  alertType             AlertType   @relation(fields: [alertTypeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  acknowledgedByUser    User?       @relation("AlertAcknowledgedByUser", fields: [acknowledgedByUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@map("alert")
+  @@index([deviceSerial], map: "idx_alert_device_serial")
+  @@index([alertTypeId], map: "idx_alert_type_id")
+  @@index([occurredAt], map: "idx_alert_occurred_at")
+  @@index([runId], map: "idx_alert_run_id")
+}
+
+model DeviceData {
+  id              BigInt    @id @default(autoincrement())
+  deviceSerial   String    @map("device_serial") @db.VarChar(100)
+  runId           BigInt?   @map("run_id")
+  recordedAt      DateTime  @default(now()) @map("recorded_at") @db.Timestamptz(6)
+  temperature     Decimal?  @db.Decimal(10, 4)
+  batteryLevel    Decimal?  @map("battery_level") @db.Decimal(10, 4)
+  signalStrength  Int?      @map("signal_strength")
+  payloadJson     Json?     @map("payload_json")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  device         Device   @relation(fields: [deviceSerial], references: [serial], onDelete: Restrict, onUpdate: Cascade)
+  run             Run?      @relation(fields: [runId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@map("device_data")
+  @@index([deviceSerial], map: "idx_device_data_device_serial")
+  @@index([recordedAt], map: "idx_device_data_recorded_at")
+  @@index([runId], map: "idx_device_data_run_id")
+  @@index([deviceSerial, recordedAt], map: "idx_device_data_device_recorded_at")
+}

@@ -1,0 +1,14 @@
+rules:
+  - id: no-process-env-outside-config
+    message: "Access environment variables only through the centralized config layer."
+    severity: WARNING
+    languages: [javascript, typescript]
+    pattern: process.env.$VAR
+    paths:
+      include:
+        - services/src/**/*.ts
+      exclude:
+        - services/src/config/**
+        - services/src/main.ts
+        - "**/*.spec.ts"
+        - "**/*.test.ts"

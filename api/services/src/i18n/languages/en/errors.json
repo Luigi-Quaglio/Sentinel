@@ -1,0 +1,6 @@
+{
+  "notFound": "Record not found",
+  "unauthorized": "Unauthorized user",
+  "forbidden": "You do not have permission to perform this action",
+  "internal": "Internal server error"
+}
